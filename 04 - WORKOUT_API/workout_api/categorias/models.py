@@ -1,4 +1,3 @@
-from workout_api.atleta.models import AtletaModel
 from workout_api.contrib.models import BaseModel
 from sqlalchemy import  Integer, String
 from sqlalchemy.orm import mapped_column, Mapped, relationship
