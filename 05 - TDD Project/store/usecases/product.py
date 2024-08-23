@@ -1,4 +1,5 @@
-from typing import List
+from datetime import datetime
+from typing import List, Optional
 from uuid import UUID
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 import pymongo
@@ -33,16 +34,34 @@ class ProductUsecase:
 
         return ProductOut(**result)
 
-    async def query(self) -> List[ProductOut]:
-        return [ProductOut(**item) async for item in self.collection.find()]
+    async def query(self, min_price: Optional[float] = None, max_price: Optional[float] = None) -> List[ProductOut]:
+        query = {}
+
+        if min_price is not None:
+            query["price"] = {"$gt": min_price}
+        
+        if max_price is not None:
+            if "price" in query:
+                query["price"]["$lt"] = max_price
+            else:
+                query["price"] = {"$lt": max_price}
+
+        results = self.collection.find(query)
+        return [ProductOut(**item) async for item in results]
 
     async def update(self, id: UUID, body: ProductUpdate) -> ProductUpdateOut:
+        # Atualiza o campo updated_at para o horário atual
+        body_data = body.model_dump(exclude_none=True)
+        body_data["updated_at"] = datetime.utcnow()
 
         result = await self.collection.find_one_and_update(
             filter={"id": id},
-            update={"$set": body.model_dump(exclude_none=True)},
+            update={"$set": body_data},
             return_document=pymongo.ReturnDocument.AFTER,
         )
+
+        if not result:
+            raise NotFoundException(message=f"Product not found with filter: {id}")
 
         return ProductUpdateOut(**result)
 
