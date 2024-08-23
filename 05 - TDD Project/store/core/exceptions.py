@@ -8,3 +8,9 @@ class BaseException(Exception):
 
 class NotFoundException(BaseException):
     message = "Not Found"
+
+
+class ProductCreationException(Exception):
+    def __init__(self, message: str = "Failed to create product"):
+        self.message = message
+        super().__init__(self.message)
